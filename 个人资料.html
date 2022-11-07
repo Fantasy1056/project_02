@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/bootstrap.min.css" />
+    <style>
+        .form-select {
+            width: 103px;
+            display: inline-block;
+        }
+
+        .col-form-label {
+            text-align: right;
+        }
+
+        .figure-img {
+            width: 100px;
+            height: 100px;
+            cursor: pointer;
+        }
+
+        #upload {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="p-5">个人设置</h1>
+        <form class="col-6">
+            <div class="row mb-3">
+                <label class="col-form-label col-3">昵称：</label>
+                <div class="col-9">
+                    <input class="form-control col-9" type="text" name="nickname" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-form-label col-3">籍贯：</label>
+                <div class="col-9">
+                    <select class="form-select col-4" name="province">
+                        <option value="">--省--</option>
+                    </select>
+                    <select class="form-select col-4" name="city">
+                        <option value="">--市--</option>
+                    </select>
+                    <select class="form-select col-4" name="area">
+                        <option value="">--区--</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-form-label col-3">头像：</label>
+                <div class="col-9">
+                    <input class="form-control col-9" type="hidden" name="avatar" />
+                    <figure class="figure">
+                        <input type="file" id="upload" />
+                        <img src="https://yanxuan-item.nosdn.127.net/12a882699bd531a1bd428bffe1989525.jpg"
+                            class="figure-img img-fluid rounded" alt="..." />
+                        <figcaption class="figure-caption">修改头像</figcaption>
+                    </figure>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label class="col-3"></label>
+                <div class="col-9">
+                    <button class="btn btn-primary">保存</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="./lib/bootstrap.min.js"></script>
+    <script src="./lib/axios.js"></script>
+    <script src="./lib/form-serialize.js"></script>
+    <script>
+        // 在线接口文档：https://www.showdoc.com.cn/1834761734600444/8477923164668939
+
+        // 配置请求根路径
+        axios.defaults.baseURL = 'http://ajax-api.itheima.net'
+
+
+
+
+        // 昵称
+        let nameInput = document.querySelector('[name=nickname]')
+
+        // 头像
+        let upload = document.querySelector('#upload')
+        let avatarImg = document.querySelector('.figure img')
+
+        // 隐藏域
+        let hiddenAvatar = document.querySelector('[name=avatar]')
+        console.log(hiddenAvatar);
+
+        // 省市区
+        let form = document.querySelector('form')
+        let provinceSelect = document.querySelector('[name=province]')
+        let citySelect = document.querySelector('[name=city]')
+        let areaSelect = document.querySelector('[name=area]')
+
+            ; (async () => {
+                //===========================渲染省市区数据=================================
+
+                //获取提交过的个人数据
+                let { data: { data: info } } = await axios({
+                    url: '/api/settings'
+                });
+
+                //获取省份数据填充进下拉菜单
+                let { data: { data: shen_info } } = await axios.get('/api/province');
+
+                let shen = shen_info.map(value => `<option value="${value}">${value}</option>`).join('');
+
+                provinceSelect.innerHTML = `<option value="">--省--</option>${shen}`;
+                //找到省份中和个人数据匹配得数据，添加selected属性
+                // const p_selected = provinceSelect.querySelector(`[value=${info.province}]`);
+                // p_selected.selected = true;
+                // provinceSelect.value = info.province;
+
+                //获取城市数据填充进下拉菜单
+                let { data: { data: shi_info } } = await axios.get('/api/city', { params: { pname: info.province } });
+
+                let shi = shi_info.map(value => `<option value="${value}">${value}</option>`).join('');
+
+
+                citySelect.innerHTML = `<option value="">--市--</option>${shi}`;
+                //找到城市中和个人数据匹配得数据，添加selected属性
+                // const c_selected = citySelect.querySelector(`[value=${info.city}]`);
+                // c_selected.selected = true;
+                // citySelect.value = info.city;
+
+
+
+                let { data: { data: xian_info } } = await axios.get('/api/area', { params: { pname: info.province, cname: info.city } });
+
+                let xian = xian_info.map(value => `<option value="${value}">${value}</option>`).join('');
+
+                areaSelect.innerHTML = `<option value="">--县--</option>${xian}`;
+                //找到县中和个人数据匹配得数据，添加selected属性
+                // const x_selected = areaSelect.querySelector(`[value=${info.area}]`);
+                // x_selected.selected = true;
+                // areaSelect.value = info.area;
+
+                //填充name和头像地址信息
+                // nameInput.value = info.nickname;
+                avatarImg.src = info.avatar;
+                //获取个人数据时，头像地址赋予给隐藏域
+                // hiddenAvatar.value = avatarImg.src;
+
+                //遍历个人数据对象填充form表单
+                for (const key in info) {
+                    console.log(key, info[key]);
+                    document.querySelector(`[name=${key}]`).value = info[key];
+                }
+                //===========================省市区联动=================================
+                //省份选择发生改变时
+                provinceSelect.addEventListener('change', async () => {
+                    // const selected = provinceSelect.querySelectorAll('option')[provinceSelect.selectedIndex];
+                    citySelect.innerHTML = `<option value="">--市--</option>`;
+                    areaSelect.innerHTML = `<option value="">--县--</option>`;
+                    let { data: { data: city } } = await axios({
+                        method: 'get',
+                        url: '/api/city',
+                        params: {
+                            pname: provinceSelect.value
+                        }
+                    });
+
+                    let shi = city.map(value => `<option value="${value}">${value}</option>`).join('');
+                    citySelect.innerHTML = `<option value="">--市--</option>${shi}`;
+
+                });
+                //城市选择发生改变时
+                citySelect.addEventListener('change', async () => {
+                    // const selected1 = provinceSelect.querySelectorAll('option')[provinceSelect.selectedIndex];
+                    // const selected2 = citySelect.querySelectorAll('option')[citySelect.selectedIndex];
+                    areaSelect.innerHTML = `<option value="">--县--</option>`;
+                    let { data: { data: area } } = await axios({
+                        method: 'get',
+                        url: '/api/area',
+                        params: {
+                            pname: provinceSelect.value,
+                            cname: citySelect.value
+                        }
+                    });
+
+                    let xian = area.map(value => `<option value="${value}">${value}</option>`).join('');
+                    areaSelect.innerHTML = `<option value="">--县--</option>${xian}`;
+
+                });
+
+
+                //===========================上传头像=================================
+                avatarImg.addEventListener('click', () => { upload.click(); });
+
+                upload.addEventListener('change', async () => {
+                    const fd = new FormData();
+                    if (upload.files[0] === undefined) {
+                        return;
+                    }
+                    fd.append('avatar', upload.files[0]);
+                    let { data } = await axios({
+                        method: 'post',
+                        url: 'http://www.liulongbin.top:3006/api/upload/avatar',
+                        data: fd
+                    });
+
+                    avatarImg.src = "http://www.liulongbin.top:3006" + data.url;
+                    //头像上传后，新地址赋给隐藏域
+                    hiddenAvatar.value = avatarImg.src;
+                })
+                //===========================保存数据=================================
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    let data = serialize(form, { hash: true });
+
+                    axios({
+                        method: 'PUT',
+                        url: "/api/settings",
+                        data
+                    }).then(res => {
+                        console.log(res);
+                    })
+                })
+            })();
+
+    </script>
+
+
+</body>
+
+</html>
